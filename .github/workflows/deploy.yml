@@ -6,60 +6,36 @@ on:
       - main
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      - name: Checkout source
+        uses: actions/checkout@v3
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-    - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v1
-      with:
-        credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON }}
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON }}
 
-    - name: Configure gcloud CLI
-      run: |
-        gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
-        gcloud auth configure-docker asia.gcr.io
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker asia-northeast2-docker.pkg.dev
 
-    - name: Build and Push Docker image
-      run: |
-        docker build -t asia.gcr.io/${{ secrets.GCP_PROJECT_ID }}/node-red-app .
-        docker push asia.gcr.io/${{ secrets.GCP_PROJECT_ID }}/node-red-app
+      - name: Build and Push Docker image to Artifact Registry
+        run: |
+          docker buildx build --platform linux/amd64 \
+            -t asia-northeast2-docker.pkg.dev/camera-line-webhook/camera-line-webhook/node-red-app \
+            --push .
 
-    - name: Deploy to Cloud Run
-      run: |
-        gcloud run deploy node-red-app \
-          --image asia.gcr.io/${{ secrets.GCP_PROJECT_ID }}/node-red-app \
-          --region ${{ secrets.GCP_REGION }} \
-          --platform managed \
-          --allow-unauthenticated
-
-    - name: Notify via LINE (optional)
-      if: success()
-      run: |
-        curl -X POST https://api.line.me/v2/bot/message/push \
-          -H "Authorization: Bearer ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}" \
-          -H "Content-Type: application/json" \
-          -d '{
-                "to": "${{ secrets.LINE_USER_ID }}",
-                "messages":[
-                  {
-                    "type":"flex",
-                    "altText":"Node-REDデプロイ完了",
-                    "contents":{ ...Flex Message JSON... }
-                  }
-                ]
-              }'
-
-    - name: Set Cloud Run to public access
-      run: |
-        gcloud run services add-iam-policy-binding node-red-app \
-          --region=${{ secrets.GCP_REGION }} \
-          --member="allUsers" \
-          --role="roles/run.invoker"
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy node-red-app \
+            --image asia-northeast2-docker.pkg.dev/camera-line-webhook/camera-line-webhook/node-red-app \
+            --region asia-northeast2 \
+            --platform managed \
+            --allow-unauthenticated
 
