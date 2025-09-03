@@ -28,14 +28,21 @@ jobs:
       - name: Build and Push Docker image to Artifact Registry
         run: |
           docker buildx build --platform linux/amd64 \
-            -t asia-northeast2-docker.pkg.dev/camera-line-webhook/camera-line-webhook/node-red-app \
+            -t asia-northeast2-docker.pkg.dev/camera-line-webhook/camera-line-webhook/node-red-service \
             --push .
 
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy node-red-app \
-            --image asia-northeast2-docker.pkg.dev/camera-line-webhook/camera-line-webhook/node-red-app \
+          gcloud run deploy node-red-service \
+            --image asia-northeast2-docker.pkg.dev/camera-line-webhook/camera-line-webhook/node-red-service \
             --region asia-northeast2 \
             --platform managed \
             --allow-unauthenticated
 
+      - name: Make Cloud Run publicly accessible
+        run: |
+          gcloud run services add-iam-policy-binding node-red-service \
+            --region=${{ secrets.GCP_REGION }} \
+            --member="allUsers" \
+            --role="roles/run.invoker"
+            

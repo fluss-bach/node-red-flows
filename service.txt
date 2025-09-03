@@ -1,0 +1,3 @@
+   SERVICE           REGION           URL                                                            LAST DEPLOYED BY                                    LAST DEPLOYED AT
+[32m✔[39;0m  node-red-app      asia-northeast2  https://node-red-app-733050241945.asia-northeast2.run.app      733050241945-compute@developer.gserviceaccount.com  2025-09-03T08:29:01.611897Z
+[32m✔[39;0m  node-red-service  asia-northeast2  https://node-red-service-733050241945.asia-northeast2.run.app  tama0gawa3@gmail.com                                2025-09-03T01:36:06.687914Z
