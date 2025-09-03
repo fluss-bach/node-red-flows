@@ -56,3 +56,10 @@ jobs:
                 ]
               }'
 
+    - name: Set Cloud Run to public access
+      run: |
+        gcloud run services add-iam-policy-binding node-red-app \
+          --region=${{ secrets.GCP_REGION }} \
+          --member="allUsers" \
+          --role="roles/run.invoker"
+
