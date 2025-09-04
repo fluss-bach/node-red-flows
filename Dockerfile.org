@@ -1,7 +1,0 @@
-FROM nodered/node-red:latest
-
-# 必要ならLINEノードなどを事前インストール
-# RUN npm install node-red-contrib-line-messaging
-
-EXPOSE 1880
-
