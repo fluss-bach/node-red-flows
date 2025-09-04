@@ -1,48 +1,36 @@
 name: Deploy to Cloud Run
-
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout source
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+      - uses: docker/setup-buildx-action@v2
 
-      - name: Authenticate to Google Cloud
+      - name: Auth to Google Cloud
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON }}
 
       - name: Configure Docker for Artifact Registry
-        run: |
-          gcloud auth configure-docker asia-northeast2-docker.pkg.dev
+        run: gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev
 
-      - name: Build and Push Docker image to Artifact Registry
+      - name: Build & Push image
         run: |
-          docker buildx build --platform linux/amd64 \
-            -t asia-northeast2-docker.pkg.dev/camera-line-webhook/camera-line-webhook/node-red-service \
-            --push .
+          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/${{ secrets.GCP_SERVICE_NAME }}:${{ github.sha }}"
+          docker buildx build --platform linux/amd64 -t "$IMAGE" --push .
 
-      - name: Deploy to Cloud Run
+      - name: Deploy to Cloud Run (inject Secret Manager)
         run: |
-          gcloud run deploy node-red-service \
-            --image asia-northeast2-docker.pkg.dev/camera-line-webhook/camera-line-webhook/node-red-service \
-            --region asia-northeast2 \
+          IMAGE="${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.GCP_ARTIFACT_REPO }}/${{ secrets.GCP_SERVICE_NAME }}:${{ github.sha }}"
+          gcloud run deploy "${{ secrets.GCP_SERVICE_NAME }}" \
+            --image "$IMAGE" \
+            --region "${{ secrets.GCP_REGION }}" \
             --platform managed \
-            --allow-unauthenticated
+            --allow-unauthenticated \
+            --update-secrets LINE_CHANNEL_ACCESS_TOKEN=line-channel-token:latest
 
-      - name: Make Cloud Run publicly accessible
-        run: |
-          gcloud run services add-iam-policy-binding node-red-service \
-            --region=${{ secrets.GCP_REGION }} \
-            --member="allUsers" \
-            --role="roles/run.invoker"
-            
