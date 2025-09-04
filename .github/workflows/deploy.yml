@@ -38,7 +38,7 @@ jobs:
             --region ${{ secrets.GCP_REGION }} \
             --platform managed \
             --allow-unauthenticated \
-            --update-secrets LINE_CHANNEL_ACCESS_TOKEN=line-channel-token:latest
+            --update-secrets LINE_CHANNEL_ACCESS_TOKEN=line-channel-token:latest,LINE_USER_ID=line-user-id:latest
 
       - name: Make Cloud Run publicly accessible
         run: |
